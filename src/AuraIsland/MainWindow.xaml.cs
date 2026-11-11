@@ -100,8 +100,7 @@ public partial class MainWindow : Window
     private async void Wifi_Click(object sender, RoutedEventArgs e)
     {
         var state = await NetworkService.GetWifiStateAsync();
-        var wifiLine = state.Split('\n').FirstOrDefault(line => line.Contains("Wi-Fi", StringComparison.OrdinalIgnoreCase));
-        var currentlyEnabled = wifiLine?.Contains("Enabled", StringComparison.OrdinalIgnoreCase) == true;
+        var currentlyEnabled = state.Contains("Enabled", StringComparison.OrdinalIgnoreCase);
         var result = await NetworkService.SetWifiAsync(!currentlyEnabled);
         SetStatus($"Wi-Fi: {result}");
         await RefreshWifiAsync();
@@ -110,9 +109,10 @@ public partial class MainWindow : Window
     private async Task RefreshWifiAsync()
     {
         var state = await NetworkService.GetWifiStateAsync();
-        var wifiLine = state.Split('\n').FirstOrDefault(line => line.Contains("Wi-Fi", StringComparison.OrdinalIgnoreCase));
-        var enabled = wifiLine?.Contains("Enabled", StringComparison.OrdinalIgnoreCase) == true;
-        WifiButton.Content = enabled ? "Wi-Fi: включён (выкл.)" : "Wi-Fi: выключен (вкл.)";
+        var enabled = state.Contains("Enabled", StringComparison.OrdinalIgnoreCase);
+        WifiButton.Content = state.Contains("NotFound", StringComparison.OrdinalIgnoreCase)
+            ? "Wi-Fi адаптер не найден"
+            : enabled ? "Wi-Fi: включён (выкл.)" : "Wi-Fi: выключен (вкл.)";
     }
 
     private async void Bluetooth_Click(object sender, RoutedEventArgs e)
