@@ -7,6 +7,8 @@ using System.Windows.Media.Animation;
 using System.Windows.Threading;
 using System.Windows.Forms;
 using DrawingIcon = System.Drawing.SystemIcons;
+using MediaColor = System.Windows.Media.Color;
+using MediaBrushes = System.Windows.Media.Brushes;
 using AuraIsland.Services;
 
 namespace AuraIsland;
@@ -168,9 +170,9 @@ public partial class MainWindow : Window
     private void ApplyTheme()
     {
         var light = _settings.LightTheme;
-        IslandBorder.Background = new SolidColorBrush(light ? Color.FromArgb(248, 241, 244, 249) : Color.FromArgb(245, 20, 23, 29));
-        IslandBorder.BorderBrush = new SolidColorBrush(light ? Color.FromRgb(205, 212, 222) : Color.FromRgb(48, 58, 77));
-        var primary = light ? Brushes.Black : Brushes.White;
+        IslandBorder.Background = new SolidColorBrush(light ? MediaColor.FromArgb(248, 241, 244, 249) : Color.FromArgb(245, 20, 23, 29));
+        IslandBorder.BorderBrush = new SolidColorBrush(light ? MediaColor.FromRgb(205, 212, 222) : Color.FromRgb(48, 58, 77));
+        var primary = light ? MediaBrushes.Black : MediaBrushes.White;
         var secondary = light ? new SolidColorBrush(Color.FromRgb(75, 85, 99)) : new SolidColorBrush(Color.FromRgb(170, 178, 192));
         ClockText.Foreground = primary; DateText.Foreground = secondary;
         CpuText.Foreground = primary; RamText.Foreground = primary; WeatherText.Foreground = primary;
