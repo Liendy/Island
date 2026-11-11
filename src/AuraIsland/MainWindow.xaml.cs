@@ -170,10 +170,10 @@ public partial class MainWindow : Window
     private void ApplyTheme()
     {
         var light = _settings.LightTheme;
-        IslandBorder.Background = new SolidColorBrush(light ? MediaColor.FromArgb(248, 241, 244, 249) : Color.FromArgb(245, 20, 23, 29));
-        IslandBorder.BorderBrush = new SolidColorBrush(light ? MediaColor.FromRgb(205, 212, 222) : Color.FromRgb(48, 58, 77));
+        IslandBorder.Background = new SolidColorBrush(light ? MediaColor.FromArgb(248, 241, 244, 249) : MediaColor.FromArgb(245, 20, 23, 29));
+        IslandBorder.BorderBrush = new SolidColorBrush(light ? MediaColor.FromRgb(205, 212, 222) : MediaColor.FromRgb(48, 58, 77));
         var primary = light ? MediaBrushes.Black : MediaBrushes.White;
-        var secondary = light ? new SolidColorBrush(Color.FromRgb(75, 85, 99)) : new SolidColorBrush(Color.FromRgb(170, 178, 192));
+        var secondary = light ? new SolidColorBrush(MediaColor.FromRgb(75, 85, 99)) : new SolidColorBrush(MediaColor.FromRgb(170, 178, 192));
         ClockText.Foreground = primary; DateText.Foreground = secondary;
         CpuText.Foreground = primary; RamText.Foreground = primary; WeatherText.Foreground = primary;
         ThemeButton.Content = light ? "Светлая тема ✓" : "Тёмная тема ✓";
