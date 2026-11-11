@@ -5,10 +5,13 @@ namespace AuraIsland.Services;
 public static class NetworkService
 {
     public static Task<string> GetWifiStateAsync() =>
-        RunAsync("netsh.exe", "interface show interface", false);
+        RunAsync("powershell.exe", "-NoProfile -Command \"$a=Get-NetAdapter -Name 'Wi-Fi' -ErrorAction SilentlyContinue; if(!$a){'NotFound'} elseif($a.Status -eq 'Disabled'){'Disabled'} else {'Enabled'}\"", false);
 
-    public static Task<string> SetWifiAsync(bool enabled) =>
-        RunAsync("netsh.exe", $"interface set interface name=\"Wi-Fi\" admin={(enabled ? "enabled" : "disabled")}", true);
+    public static Task<string> SetWifiAsync(bool enabled)
+    {
+        var command = enabled ? "Enable-NetAdapter" : "Disable-NetAdapter";
+        return RunAsync("powershell.exe", $"-NoProfile -ExecutionPolicy Bypass -Command \"{command} -Name 'Wi-Fi' -Confirm:$false -ErrorAction Stop\"", true);
+    }
 
     public static Task<string> GetBluetoothStateAsync() =>
         RunAsync("powershell.exe", "-NoProfile -Command \"$d=Get-PnpDevice -Class Bluetooth -ErrorAction SilentlyContinue; if($d | Where-Object {$_.Status -eq 'OK'}) {'Enabled'} else {'Disabled'}\"", false);
@@ -38,7 +41,7 @@ public static class NetworkService
             var output = await p.StandardOutput.ReadToEndAsync();
             var error = await p.StandardError.ReadToEndAsync();
             await p.WaitForExitAsync();
-            return string.IsNullOrWhiteSpace(output) ? error : output;
+            return string.IsNullOrWhiteSpace(output) ? error : output.Trim();
         }
         catch (System.ComponentModel.Win32Exception ex) when (ex.NativeErrorCode == 1223) { return "Запрос прав администратора отменён."; }
         catch (Exception ex) { return ex.Message; }
