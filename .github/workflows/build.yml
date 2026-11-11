@@ -1,0 +1,29 @@
+name: Build Aura Island
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: Restore
+        run: dotnet restore AuraIsland.sln
+      - name: Build
+        run: dotnet build AuraIsland.sln -c Release --no-restore
+      - name: Publish self-contained app
+        run: dotnet publish src/AuraIsland/AuraIsland.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o publish
+      - name: Upload Windows build
+        uses: actions/upload-artifact@v4
+        with:
+          name: AuraIsland-win-x64
+          path: publish/
+          if-no-files-found: error
