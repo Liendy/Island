@@ -5,29 +5,34 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
+using AuraIsland.Services;
 
 namespace AuraIsland;
 
 public partial class MainWindow : Window
 {
     private readonly DispatcherTimer _timer = new() { Interval = TimeSpan.FromSeconds(1) };
-    private readonly DispatcherTimer _metricsTimer = new() { Interval = TimeSpan.FromSeconds(1) };
+    private readonly DispatcherTimer _metricsTimer = new() { Interval = TimeSpan.FromSeconds(2) };
+    private readonly AppSettings _settings = AppSettings.Load();
     private bool _expanded;
-    private bool _lightTheme;
     private ulong _lastIdle, _lastKernel, _lastUser;
 
     public MainWindow()
     {
         InitializeComponent();
-        _timer.Tick += (_, _) => UpdateClock();
-        _metricsTimer.Tick += (_, _) => UpdateMetrics();
+        CityBox.Text = _settings.City;
         Loaded += (_, _) =>
         {
             GetSystemTimes(out _lastIdle, out _lastKernel, out _lastUser);
             UpdateClock();
             UpdateMetrics();
-            _timer.Start();
-            _metricsTimer.Start();
+            ApplyTheme();
+            UpdateStartupLabel();
+            _timer.Tick += (_, _) => UpdateClock();
+            _metricsTimer.Tick += (_, _) => UpdateMetrics();
+            _timer.Start(); _metricsTimer.Start();
+            _ = RefreshWifiAsync();
+            _ = RefreshWeatherAsync();
         };
     }
 
@@ -48,22 +53,16 @@ public partial class MainWindow : Window
         if (GetSystemTimes(out var idle, out var kernel, out var user))
         {
             var idleDelta = idle - _lastIdle;
-            var kernelDelta = kernel - _lastKernel;
-            var userDelta = user - _lastUser;
-            var total = kernelDelta + userDelta;
+            var total = (kernel - _lastKernel) + (user - _lastUser);
             var cpu = total == 0 ? 0 : Math.Clamp((double)(total - idleDelta) * 100 / total, 0, 100);
             _lastIdle = idle; _lastKernel = kernel; _lastUser = user;
-            CpuBar.Value = cpu;
-            CpuText.Text = $"{cpu:0}%";
+            CpuBar.Value = cpu; CpuText.Text = $"{cpu:0}%";
         }
-
         var memory = new MemoryStatusEx { Length = (uint)Marshal.SizeOf<MemoryStatusEx>() };
         if (GlobalMemoryStatusEx(ref memory))
         {
-            var used = memory.TotalPhysical == 0 ? 0 :
-                (double)(memory.TotalPhysical - memory.AvailablePhysical) * 100 / memory.TotalPhysical;
-            RamBar.Value = used;
-            RamText.Text = $"{used:0}%";
+            var used = memory.TotalPhysical == 0 ? 0 : (double)(memory.TotalPhysical - memory.AvailablePhysical) * 100 / memory.TotalPhysical;
+            RamBar.Value = used; RamText.Text = $"{used:0}%";
         }
     }
 
@@ -82,51 +81,103 @@ public partial class MainWindow : Window
     private void ToggleExpanded()
     {
         _expanded = !_expanded;
-        var target = _expanded ? 260d : 76d;
+        var target = _expanded ? 550d : 82d;
         ExpandedPanel.Visibility = _expanded ? Visibility.Visible : Visibility.Collapsed;
         ExpandGlyph.Text = _expanded ? "⌃" : "⌄";
-        var animation = new DoubleAnimation(target, TimeSpan.FromMilliseconds(220))
+        BeginAnimation(HeightProperty, new DoubleAnimation(target, TimeSpan.FromMilliseconds(230))
+        { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } });
+    }
+
+    private void SetStatus(string message) => StatusText.Text = message;
+
+    private void Previous_Click(object s, RoutedEventArgs e) { MediaService.Previous(); SetStatus("Предыдущий трек"); }
+    private void PlayPause_Click(object s, RoutedEventArgs e) { MediaService.PlayPause(); SetStatus("Команда воспроизведения/паузы отправлена активному плееру"); }
+    private void Next_Click(object s, RoutedEventArgs e) { MediaService.Next(); SetStatus("Следующий трек"); }
+    private void VolumeDown_Click(object s, RoutedEventArgs e) { MediaService.VolumeDown(); SetStatus("Громкость уменьшена"); }
+    private void VolumeUp_Click(object s, RoutedEventArgs e) { MediaService.VolumeUp(); SetStatus("Громкость увеличена"); }
+
+    private async void Wifi_Click(object sender, RoutedEventArgs e)
+    {
+        var state = await NetworkService.GetWifiStateAsync();
+        var enabled = !state.Contains("connected", StringComparison.OrdinalIgnoreCase) &&
+                      !state.Contains("disconnected", StringComparison.OrdinalIgnoreCase) &&
+                      !state.Contains("enabled", StringComparison.OrdinalIgnoreCase);
+        // If interface reports disconnected but enabled, keep it enabled; use button to enable/disable explicitly.
+        enabled = WifiButton.Content?.ToString()?.Contains("выкл", StringComparison.OrdinalIgnoreCase) == true;
+        var result = await NetworkService.SetWifiAsync(enabled);
+        SetStatus($"Wi-Fi: {result}");
+        await RefreshWifiAsync();
+    }
+
+    private async Task RefreshWifiAsync()
+    {
+        var state = await NetworkService.GetWifiStateAsync();
+        WifiButton.Content = state.Contains("disconnected", StringComparison.OrdinalIgnoreCase) ||
+                             state.Contains("not connected", StringComparison.OrdinalIgnoreCase)
+            ? "Wi-Fi: подключён?" : $"Wi-Fi: {state}";
+    }
+
+    private async void Bluetooth_Click(object sender, RoutedEventArgs e)
+    {
+        var turnOn = BluetoothButton.Content?.ToString()?.Contains("вкл", StringComparison.OrdinalIgnoreCase) == true;
+        var result = await NetworkService.ToggleBluetoothAsync(turnOn);
+        SetStatus($"Bluetooth: {result}");
+        BluetoothButton.Content = turnOn ? "Bluetooth: запрос вкл." : "Bluetooth: запрос выкл.";
+    }
+
+    private async void Weather_Click(object sender, RoutedEventArgs e)
+    {
+        _settings.City = CityBox.Text.Trim(); _settings.Save();
+        await RefreshWeatherAsync();
+    }
+
+    private async Task RefreshWeatherAsync()
+    {
+        try
         {
-            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
-        };
-        BeginAnimation(HeightProperty, animation);
+            WeatherText.Text = "Загружаю погоду…";
+            var info = await WeatherService.GetAsync(_settings.City);
+            WeatherText.Text = info is null ? "Город не найден" : $"{info.City}: {info.Temperature:0}°C • {info.Description}";
+        }
+        catch (Exception ex) { WeatherText.Text = "Погода недоступна: " + ex.Message; }
     }
 
     private void ThemeButton_Click(object sender, RoutedEventArgs e)
     {
-        _lightTheme = !_lightTheme;
-        IslandBorder.Background = _lightTheme
-            ? new SolidColorBrush(Color.FromArgb(245, 241, 244, 249))
-            : new SolidColorBrush(Color.FromArgb(245, 20, 23, 29));
-        IslandBorder.BorderBrush = _lightTheme
-            ? new SolidColorBrush(Color.FromRgb(205, 212, 222))
-            : new SolidColorBrush(Color.FromRgb(48, 58, 77));
-        SetTextTheme(_lightTheme ? Brushes.Black : Brushes.White,
-                     _lightTheme ? new SolidColorBrush(Color.FromRgb(75, 85, 99)) : new SolidColorBrush(Color.FromRgb(170, 178, 192)));
-        ThemeButton.Content = _lightTheme ? "Switch to dark" : "Switch to light";
+        _settings.LightTheme = !_settings.LightTheme;
+        _settings.Save(); ApplyTheme();
     }
 
-    private void SetTextTheme(Brush primary, Brush secondary)
+    private void ApplyTheme()
     {
-        ClockText.Foreground = primary;
-        DateText.Foreground = secondary;
-        CpuText.Foreground = primary;
-        RamText.Foreground = primary;
-        foreach (var child in ExpandedPanel.Children)
-            if (child is TextBlock block && block.Name != "none") block.Foreground = secondary;
+        var light = _settings.LightTheme;
+        IslandBorder.Background = new SolidColorBrush(light ? Color.FromArgb(248, 241, 244, 249) : Color.FromArgb(245, 20, 23, 29));
+        IslandBorder.BorderBrush = new SolidColorBrush(light ? Color.FromRgb(205, 212, 222) : Color.FromRgb(48, 58, 77));
+        var primary = light ? Brushes.Black : Brushes.White;
+        var secondary = light ? new SolidColorBrush(Color.FromRgb(75, 85, 99)) : new SolidColorBrush(Color.FromRgb(170, 178, 192));
+        ClockText.Foreground = primary; DateText.Foreground = secondary;
+        CpuText.Foreground = primary; RamText.Foreground = primary; WeatherText.Foreground = primary;
+        ThemeButton.Content = light ? "Светлая тема ✓" : "Тёмная тема ✓";
     }
 
-    [DllImport("kernel32.dll", SetLastError = true)]
+    private void Startup_Click(object sender, RoutedEventArgs e)
+    {
+        _settings.StartWithWindows = !_settings.StartWithWindows;
+        try { _settings.Save(); UpdateStartupLabel(); SetStatus("Настройка автозапуска сохранена."); }
+        catch (Exception ex) { SetStatus("Не удалось изменить автозапуск: " + ex.Message); }
+    }
+
+    private void UpdateStartupLabel() => StartupButton.Content = _settings.StartWithWindows ? "Автозапуск: вкл." : "Автозапуск: выкл.";
+
+    [DllImport("kernel32.dll", SetLastError=true)]
     private static extern bool GetSystemTimes(out ulong idleTime, out ulong kernelTime, out ulong userTime);
 
-    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
+    [StructLayout(LayoutKind.Sequential)]
     private struct MemoryStatusEx
     {
         public uint Length, MemoryLoad;
-        public ulong TotalPhysical, AvailablePhysical, TotalPageFile, AvailablePageFile,
-                     TotalVirtual, AvailableVirtual, AvailableExtendedVirtual;
+        public ulong TotalPhysical, AvailablePhysical, TotalPageFile, AvailablePageFile, TotalVirtual, AvailableVirtual, AvailableExtendedVirtual;
     }
-
-    [DllImport("kernel32.dll", SetLastError = true)]
+    [DllImport("kernel32.dll", SetLastError=true)]
     private static extern bool GlobalMemoryStatusEx(ref MemoryStatusEx buffer);
 }
