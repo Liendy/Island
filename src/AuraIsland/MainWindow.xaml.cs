@@ -93,7 +93,12 @@ public partial class MainWindow : Window
         { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } });
     }
 
-    private void SetStatus(string message) => StatusText.Text = message;\n\n    private void Notify(string title, string message)\n    {\n        try { _trayIcon.BalloonTipTitle = title; _trayIcon.BalloonTipText = message; _trayIcon.ShowBalloonTip(2500); } catch { }\n    }
+    private void SetStatus(string message) => StatusText.Text = message;
+
+    private void Notify(string title, string message)
+    {
+        try { _trayIcon.BalloonTipTitle = title; _trayIcon.BalloonTipText = message; _trayIcon.ShowBalloonTip(2500); } catch { }
+    }
 
     private void Previous_Click(object s, RoutedEventArgs e) { MediaService.Previous(); SetStatus("Предыдущий трек"); }
     private void PlayPause_Click(object s, RoutedEventArgs e) { MediaService.PlayPause(); SetStatus("Команда воспроизведения/паузы отправлена активному плееру"); }
@@ -107,6 +112,7 @@ public partial class MainWindow : Window
         var currentlyEnabled = state.Contains("Enabled", StringComparison.OrdinalIgnoreCase);
         var result = await NetworkService.SetWifiAsync(!currentlyEnabled);
         SetStatus($"Wi-Fi: {result}");
+        Notify("Aura Island", "Состояние Wi-Fi изменено.");
         await RefreshWifiAsync();
     }
 
@@ -125,6 +131,7 @@ public partial class MainWindow : Window
         var currentlyEnabled = state.Contains("Enabled", StringComparison.OrdinalIgnoreCase);
         var result = await NetworkService.SetBluetoothAsync(!currentlyEnabled);
         SetStatus($"Bluetooth: {result}");
+        Notify("Aura Island", "Команда изменения Bluetooth отправлена Windows.");
         await RefreshBluetoothAsync();
     }
 
