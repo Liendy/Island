@@ -3,5 +3,14 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
+        <Style x:Key="ActionButton" TargetType="Button">
+            <Setter Property="Background" Value="#29313D"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="8,7"/>
+            <Setter Property="Margin" Value="2"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
     </Application.Resources>
 </Application>
