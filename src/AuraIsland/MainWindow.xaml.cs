@@ -5,6 +5,8 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
+using System.Windows.Forms;
+using DrawingIcon = System.Drawing.SystemIcons;
 using AuraIsland.Services;
 
 namespace AuraIsland;
@@ -14,6 +16,7 @@ public partial class MainWindow : Window
     private readonly DispatcherTimer _timer = new() { Interval = TimeSpan.FromSeconds(1) };
     private readonly DispatcherTimer _metricsTimer = new() { Interval = TimeSpan.FromSeconds(2) };
     private readonly AppSettings _settings = AppSettings.Load();
+    private readonly NotifyIcon _trayIcon = new() { Icon = DrawingIcon.Application, Visible = true, Text = "Aura Island" };
     private bool _expanded;
     private ulong _lastIdle, _lastKernel, _lastUser;
 
@@ -21,6 +24,7 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         CityBox.Text = _settings.City;
+        Closed += (_, _) => { _trayIcon.Visible = false; _trayIcon.Dispose(); };
         Loaded += (_, _) =>
         {
             GetSystemTimes(out _lastIdle, out _lastKernel, out _lastUser);
@@ -89,7 +93,7 @@ public partial class MainWindow : Window
         { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } });
     }
 
-    private void SetStatus(string message) => StatusText.Text = message;
+    private void SetStatus(string message) => StatusText.Text = message;\n\n    private void Notify(string title, string message)\n    {\n        try { _trayIcon.BalloonTipTitle = title; _trayIcon.BalloonTipText = message; _trayIcon.ShowBalloonTip(2500); } catch { }\n    }
 
     private void Previous_Click(object s, RoutedEventArgs e) { MediaService.Previous(); SetStatus("Предыдущий трек"); }
     private void PlayPause_Click(object s, RoutedEventArgs e) { MediaService.PlayPause(); SetStatus("Команда воспроизведения/паузы отправлена активному плееру"); }
