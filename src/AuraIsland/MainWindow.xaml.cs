@@ -32,6 +32,7 @@ public partial class MainWindow : Window
             _metricsTimer.Tick += (_, _) => UpdateMetrics();
             _timer.Start(); _metricsTimer.Start();
             _ = RefreshWifiAsync();
+            _ = RefreshBluetoothAsync();
             _ = RefreshWeatherAsync();
         };
     }
@@ -99,12 +100,9 @@ public partial class MainWindow : Window
     private async void Wifi_Click(object sender, RoutedEventArgs e)
     {
         var state = await NetworkService.GetWifiStateAsync();
-        var enabled = !state.Contains("connected", StringComparison.OrdinalIgnoreCase) &&
-                      !state.Contains("disconnected", StringComparison.OrdinalIgnoreCase) &&
-                      !state.Contains("enabled", StringComparison.OrdinalIgnoreCase);
-        // If interface reports disconnected but enabled, keep it enabled; use button to enable/disable explicitly.
-        enabled = WifiButton.Content?.ToString()?.Contains("выкл", StringComparison.OrdinalIgnoreCase) == true;
-        var result = await NetworkService.SetWifiAsync(enabled);
+        var wifiLine = state.Split('\n').FirstOrDefault(line => line.Contains("Wi-Fi", StringComparison.OrdinalIgnoreCase));
+        var currentlyEnabled = wifiLine?.Contains("Enabled", StringComparison.OrdinalIgnoreCase) == true;
+        var result = await NetworkService.SetWifiAsync(!currentlyEnabled);
         SetStatus($"Wi-Fi: {result}");
         await RefreshWifiAsync();
     }
@@ -112,17 +110,25 @@ public partial class MainWindow : Window
     private async Task RefreshWifiAsync()
     {
         var state = await NetworkService.GetWifiStateAsync();
-        WifiButton.Content = state.Contains("disconnected", StringComparison.OrdinalIgnoreCase) ||
-                             state.Contains("not connected", StringComparison.OrdinalIgnoreCase)
-            ? "Wi-Fi: подключён?" : $"Wi-Fi: {state}";
+        var wifiLine = state.Split('\n').FirstOrDefault(line => line.Contains("Wi-Fi", StringComparison.OrdinalIgnoreCase));
+        var enabled = wifiLine?.Contains("Enabled", StringComparison.OrdinalIgnoreCase) == true;
+        WifiButton.Content = enabled ? "Wi-Fi: включён (выкл.)" : "Wi-Fi: выключен (вкл.)";
     }
 
     private async void Bluetooth_Click(object sender, RoutedEventArgs e)
     {
-        var turnOn = BluetoothButton.Content?.ToString()?.Contains("вкл", StringComparison.OrdinalIgnoreCase) == true;
-        var result = await NetworkService.ToggleBluetoothAsync(turnOn);
+        var state = await NetworkService.GetBluetoothStateAsync();
+        var currentlyEnabled = state.Contains("Enabled", StringComparison.OrdinalIgnoreCase);
+        var result = await NetworkService.SetBluetoothAsync(!currentlyEnabled);
         SetStatus($"Bluetooth: {result}");
-        BluetoothButton.Content = turnOn ? "Bluetooth: запрос вкл." : "Bluetooth: запрос выкл.";
+        await RefreshBluetoothAsync();
+    }
+
+    private async Task RefreshBluetoothAsync()
+    {
+        var state = await NetworkService.GetBluetoothStateAsync();
+        var enabled = state.Contains("Enabled", StringComparison.OrdinalIgnoreCase);
+        BluetoothButton.Content = enabled ? "Bluetooth: включён (выкл.)" : "Bluetooth: выключен (вкл.)";
     }
 
     private async void Weather_Click(object sender, RoutedEventArgs e)
