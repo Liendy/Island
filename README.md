@@ -1,38 +1,58 @@
 # Aura Island
 
-A native Windows 11 Dynamic Island-style desktop widget built with WPF and .NET 8.
+An independent Windows 10/11 Dynamic Island-style desktop utility built with WPF and .NET 8.
 
-## Current prototype
-- Always-on-top floating island window
-- Click to expand/collapse with animation
-- Drag the island anywhere on screen
+## Included in this prototype
+- Floating, always-on-top island with expand/collapse animation
+- Drag-to-move window
 - Live clock and date
-- CPU and memory usage monitoring
-- Light/dark theme toggle
-- No third-party NuGet dependencies
+- CPU and RAM monitoring
+- Windows media-key controls: previous, play/pause, next, volume up/down
+- Wi-Fi adapter enable/disable through Windows PowerShell
+- Bluetooth device enable/disable through Windows PnP cmdlets
+- Current weather by city using the Open-Meteo geocoding and forecast APIs
+- Light/dark theme
+- Persistent city/theme/autostart settings
+- Optional Windows startup entry
 
 ## Requirements
 - Windows 10/11 (Windows 11 recommended)
-- .NET 8 SDK
+- .NET 8 SDK for local build
+- Administrator approval is required by Windows for changing Wi-Fi adapter and Bluetooth device states.
 
-## Run
-Open `AuraIsland.sln` in Visual Studio 2022 (17.8+) and run the project, or from this directory:
-
+## Run locally
+Open `AuraIsland.sln` in Visual Studio 2022 with the .NET 8 SDK installed, then press F5.
+Or run:
 ```powershell
 dotnet run --project src/AuraIsland/AuraIsland.csproj
 ```
 
-## Build
+## Build locally
 ```powershell
-dotnet publish src/AuraIsland/AuraIsland.csproj -c Release -r win-x64 --self-contained true
+dotnet publish src/AuraIsland/AuraIsland.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o publish
 ```
 
-The published application will be in `src/AuraIsland/bin/Release/net8.0-windows/win-x64/publish/`.
+## Download a build from GitHub Actions
+Open the repository's **Actions** tab, select the latest **Build Aura Island** run, and download the `AuraIsland-win-x64` artifact after the workflow succeeds.
 
-## Roadmap
-1. Prototype UI, clock, CPU/RAM, drag, themes.
-2. Windows media session controls.
-3. Wi-Fi and Bluetooth controls (with Windows permission/API constraints handled explicitly).
-4. Weather, notifications, settings and startup integration.
+## Notes and limitations
+- Media controls send standard Windows media keys to the active media session. Track title, artist, album art, and per-player selection are not implemented yet.
+- Wi-Fi currently targets the Windows network adapter named `Wi-Fi`. If the adapter has another name, rename it in `Services/NetworkService.cs`.
+- Bluetooth control uses Windows PnP device commands and may request administrator permission. Windows/device drivers can refuse disabling a radio or individual device.
+- Weather requires an internet connection. The default city is London; change it in the expanded panel.
+- The current status panel is an in-app activity/status area, not a full Windows notification-center reader.
+- Brightness control, notification-center integration, media metadata/artwork, and Android linking remain future modules.
+- No code or binaries from the third-party Island application are included or modified.
 
-This is an independent implementation. It does not include or modify the third-party Island application.
+## Project structure
+```
+AuraIsland.sln
+src/AuraIsland/
+  App.xaml
+  MainWindow.xaml
+  Services/
+    AppSettings.cs
+    MediaService.cs
+    NetworkService.cs
+    WeatherService.cs
+```
