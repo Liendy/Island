@@ -28,7 +28,7 @@ public sealed class AppSettings
     public static void SetStartup(bool enabled)
     {
         using var key = Registry.CurrentUser.CreateSubKey(@"Software\Microsoft\Windows\CurrentVersion\Run");
-        if (enabled) key.SetValue("AuraIsland", $"\\\"{Environment.ProcessPath}\\\"");
+        if (enabled) key.SetValue("AuraIsland", $"\"{Environment.ProcessPath}\"");
         else key.DeleteValue("AuraIsland", false);
     }
 }
