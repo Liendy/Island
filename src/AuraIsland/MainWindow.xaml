@@ -1,49 +1,66 @@
 <Window x:Class="AuraIsland.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Aura Island" Width="360" Height="76"
+        Title="Aura Island" Width="390" Height="82"
         WindowStyle="None" AllowsTransparency="True" Background="Transparent"
         Topmost="True" ShowInTaskbar="True" ResizeMode="NoResize"
         WindowStartupLocation="Manual" Loaded="Window_Loaded">
     <Border x:Name="IslandBorder" Background="#F014171D" CornerRadius="30"
-            BorderBrush="#303A414D" BorderThickness="1" Padding="18,10">
-        <Grid>
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-            </Grid.RowDefinitions>
+            BorderBrush="#303A414D" BorderThickness="1" Padding="18,11">
+        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel>
             <Grid x:Name="CompactPanel" MouseLeftButtonDown="Island_MouseLeftButtonDown">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
+                <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
                 <Ellipse Width="9" Height="9" Fill="#71E3B1" VerticalAlignment="Center" Margin="0,0,10,0"/>
                 <StackPanel Grid.Column="1" VerticalAlignment="Center">
                     <TextBlock x:Name="ClockText" Text="19:09" Foreground="White" FontSize="17" FontWeight="SemiBold"/>
-                    <TextBlock x:Name="DateText" Text="Wednesday, 11 November" Foreground="#AAB2C0" FontSize="10"/>
+                    <TextBlock x:Name="DateText" Text="Aura Island" Foreground="#AAB2C0" FontSize="10"/>
                 </StackPanel>
-                <TextBlock x:Name="ExpandGlyph" Grid.Column="2" Text="⌄" Foreground="#B7C0CC" FontSize="18"
-                           VerticalAlignment="Center" Margin="12,0,2,0"/>
+                <TextBlock x:Name="ExpandGlyph" Grid.Column="2" Text="⌄" Foreground="#B7C0CC" FontSize="18" VerticalAlignment="Center" Margin="12,0,2,0"/>
             </Grid>
-            <StackPanel x:Name="ExpandedPanel" Grid.Row="1" Visibility="Collapsed" Margin="0,18,0,2">
-                <TextBlock Text="SYSTEM STATUS" Foreground="#8D9AAA" FontSize="10" FontWeight="Bold" Margin="0,0,0,10"/>
+            <StackPanel x:Name="ExpandedPanel" Visibility="Collapsed" Margin="0,16,0,4">
+                <TextBlock Text="МУЗЫКА" Foreground="#8D9AAA" FontSize="10" FontWeight="Bold" Margin="0,0,0,8"/>
+                <UniformGrid Columns="5" Margin="0,0,0,14">
+                    <Button Content="⏮" Click="Previous_Click" Style="{StaticResource ActionButton}"/>
+                    <Button Content="▶ / ⏸" Click="PlayPause_Click" Style="{StaticResource ActionButton}"/>
+                    <Button Content="⏭" Click="Next_Click" Style="{StaticResource ActionButton}"/>
+                    <Button Content="−" Click="VolumeDown_Click" Style="{StaticResource ActionButton}"/>
+                    <Button Content="+" Click="VolumeUp_Click" Style="{StaticResource ActionButton}"/>
+                </UniformGrid>
+                <TextBlock Text="СИСТЕМА" Foreground="#8D9AAA" FontSize="10" FontWeight="Bold" Margin="0,0,0,8"/>
+                <UniformGrid Columns="2" Margin="0,0,0,8">
+                    <Button x:Name="WifiButton" Content="Wi-Fi: проверить" Click="Wifi_Click" Style="{StaticResource ActionButton}"/>
+                    <Button x:Name="BluetoothButton" Content="Bluetooth: вкл/выкл" Click="Bluetooth_Click" Style="{StaticResource ActionButton}"/>
+                </UniformGrid>
                 <Grid Margin="0,0,0,8">
                     <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                    <TextBlock Text="Processor" Foreground="#DCE3EC" FontSize="12"/>
+                    <TextBlock Text="Процессор" Foreground="#DCE3EC" FontSize="12"/>
                     <TextBlock x:Name="CpuText" Grid.Column="1" Text="0%" Foreground="White" FontSize="12"/>
                 </Grid>
-                <ProgressBar x:Name="CpuBar" Height="5" Minimum="0" Maximum="100" Value="0" Margin="0,0,0,12"/>
+                <ProgressBar x:Name="CpuBar" Height="5" Maximum="100" Margin="0,0,0,10"/>
                 <Grid Margin="0,0,0,8">
                     <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                    <TextBlock Text="Memory" Foreground="#DCE3EC" FontSize="12"/>
+                    <TextBlock Text="Память" Foreground="#DCE3EC" FontSize="12"/>
                     <TextBlock x:Name="RamText" Grid.Column="1" Text="0%" Foreground="White" FontSize="12"/>
                 </Grid>
-                <ProgressBar x:Name="RamBar" Height="5" Minimum="0" Maximum="100" Value="0" Margin="0,0,0,14"/>
-                <Button x:Name="ThemeButton" Content="Switch theme" Click="ThemeButton_Click" HorizontalAlignment="Stretch"
-                        Padding="10,7" Background="#29313D" Foreground="White" BorderThickness="0"/>
-                <TextBlock Text="Aura Island • prototype" Foreground="#788493" FontSize="10" HorizontalAlignment="Center" Margin="0,12,0,0"/>
+                <ProgressBar x:Name="RamBar" Height="5" Maximum="100" Margin="0,0,0,12"/>
+                <TextBlock Text="ПОГОДА" Foreground="#8D9AAA" FontSize="10" FontWeight="Bold" Margin="0,0,0,7"/>
+                <Grid Margin="0,0,0,12">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                    <TextBox x:Name="CityBox" Text="London" Padding="8,5" Background="#252C36" Foreground="White" BorderThickness="0"/>
+                    <Button Grid.Column="1" Content="Обновить" Click="Weather_Click" Style="{StaticResource ActionButton}" Margin="6,0,0,0"/>
+                </Grid>
+                <TextBlock x:Name="WeatherText" Text="Погода ещё не загружена" Foreground="#DCE3EC" FontSize="12" Margin="0,0,0,12"/>
+                <TextBlock Text="НАСТРОЙКИ" Foreground="#8D9AAA" FontSize="10" FontWeight="Bold" Margin="0,0,0,7"/>
+                <UniformGrid Columns="2">
+                    <Button x:Name="ThemeButton" Content="Сменить тему" Click="ThemeButton_Click" Style="{StaticResource ActionButton}"/>
+                    <Button x:Name="StartupButton" Content="Автозапуск: выкл." Click="Startup_Click" Style="{StaticResource ActionButton}"/>
+                </UniformGrid>
+                <TextBlock x:Name="StatusText" Text="Aura Island запущен" Foreground="#8D9AAA" FontSize="10" TextWrapping="Wrap" Margin="0,12,0,0"/>
+                <TextBlock Text="Медиакнопки управляют активным Windows-плеером. Для Wi-Fi/Bluetooth Windows может запросить права администратора."
+                           Foreground="#687586" FontSize="9" TextWrapping="Wrap" Margin="0,8,0,0"/>
             </StackPanel>
-        </Grid>
+        </StackPanel>
+        </ScrollViewer>
     </Border>
 </Window>
